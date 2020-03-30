@@ -1,0 +1,162 @@
+﻿@{
+	ViewBag.Title = "Game";
+}
+
+<div class="jumbotron" id="app">
+	<game-view></game-view>
+</div>
+
+<script type="text/x-template" id="game-template">
+	<div style="text-align: center">
+		<h3>
+			{{ whos_turn }}
+		</h3>
+		<table>
+			<tr>
+				<th></th>
+				<th>A</th>
+				<th>B</th>
+				<th>C</th>
+				<th>D</th>
+				<th>E</th>
+			</tr>
+			<tr v-for="(row, y) in state.Board">
+				<th>{{y + 1}}</th>
+				<td v-for="(cell, x) in row" v-on:click="move(x, y)" :class="{ 'highlight': is_highlighted(x, y) }">
+					<img v-if="cell!=0" :src="'/Content/'+ cell +'.png'">
+					</img>
+
+				</td>
+			</tr>
+		</table>
+
+	</div>
+</script>
+
+<style>
+
+	table {
+		margin: 0 auto;
+		border-collapse: collapse;
+		background: black;
+		color: white
+	}
+
+	th {
+		background: white;
+		border: 1px solid grey;
+		text-align: center;
+		color: black;
+		min-width: 50px;
+	}
+
+	td {
+		width: 100px;
+		height: 100px;
+	}
+
+	tr:nth-child(odd) td:nth-child(even), tr:nth-child(even) td:nth-child(odd) {
+		background: white;
+		color: black
+	}
+
+	.highlight {
+		background: green;
+	}
+
+</style>
+
+<script>
+	var data = {
+		game_id: "@ViewBag.game_id",
+		black_player_name: "@ViewBag.black_player_name",
+		white_player_name: "@ViewBag.white_player_name",
+		state: @Html.Raw(ViewBag.state),
+		from: [],
+		to: [],
+		is_moving: false,
+	};
+	ContactView = Vue.component('game-view', {
+		template: '#game-template',
+		data() {
+			return data
+		},
+		methods: {
+			is_highlighted(x, y) {
+				if (this.from && this.from.length && this.from[0] == x && this.from[1] == y) {
+					return true;
+				}
+				if (this.to && this.to.length && this.to[0] == x && this.to[1] == y) {
+					return true;
+				}
+				return false;
+			},
+			move(x, y) {
+				if (this.is_moving) return;
+				//if (!this.is_my_turn) return;
+				var self = this;
+				if (this.from && this.from.length) {
+					this.to = [x, y];
+					var xs = "ABCDE";
+					var ys = "12345";
+					var from = xs[this.from[0]] + ys[this.from[1]];
+					var to = xs[this.to[0]] + ys[this.to[1]];
+					this.is_moving = true;
+					$.post("/api/speedcheckers/move", {
+						user_id: this.state.CurrentPlayer,
+						game_id: this.game_id,
+						from: from,
+						to: to
+					})
+						.then(function (data) {
+
+							self.is_moving = false;
+							self.from = [];
+							self.to = [];
+							if (!data.Ok) return;
+
+							self.state = data.State;
+						});
+				} else {
+					this.from = [x, y];
+				}
+			},
+		},
+		computed: {
+			whos_turn() {
+				return "Current turn: "
+					+ (this.state.CurrentPlayer == this.state.WhitePlayerId ? this.white_player_name + " - Grey": this.black_player_name + " - Red");
+			},
+		},
+		mounted() {
+			var self = this;
+			var update_state_fn = function () {
+				$.post("/api/speedcheckers/state", {
+					game_id: self.game_id,
+				})
+					.then(function (data) {
+						self.state = data;
+						if (data.Winner) {
+							setTimeout(function () {
+								window.location.replace("/home/result?game_id=" + self.game_id);
+							}, 2000)
+						}
+					});
+				setTimeout(update_state_fn, 1000);
+			}
+			update_state_fn();
+		}
+	});
+
+	var app = new Vue({
+		el: '#app',
+		data: {
+		}
+	});
+
+</script>
+
+<script>
+
+
+</script>

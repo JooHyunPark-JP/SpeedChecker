@@ -1,0 +1,81 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="jumbotron" id="app">
+	<index-view></index-view>
+</div>
+
+<script type="text/x-template" id="index-template">
+	<form class="form-horizontal">
+		<fieldset>
+
+			<!-- Form Name -->
+			<legend>Choose your name and start playing</legend>
+
+			<!-- Text input-->
+			<div class="form-group">
+				<label class="col-md-4 control-label" for="textinput"></label>
+				<div class="col-md-4">
+					<input id="textinput" name="textinput" type="text" placeholder="1st player name" class="form-control input-md" required="" v-model="white_player_name">
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-md-4 control-label" for="textinput"></label>
+				<div class="col-md-4">
+					<input id="textinput" name="textinput" type="text" placeholder="2st player name" class="form-control input-md" required="" v-model="black_player_name">
+				</div>
+			</div>
+
+			<!-- Button -->
+			<div class="form-group">
+				<label class="col-md-4 control-label" for="start_game_btn"></label>
+				<div class="col-md-4">
+					<button id="start_game_btn" name="start_game_btn" class="btn btn-primary" v-on:click.stop.prevent="queue">{{ btn_label }}</button>
+				</div>
+			</div>
+
+		</fieldset>
+	</form>
+</script>
+
+<script>
+	ContactView = Vue.component('index-view', {
+		template: '#index-template',
+		data() {
+			return {
+				white_player_name: '',
+				black_player_name: '',
+				btn_label: "Start a game"
+			}
+		},
+		methods: {
+			queue() {
+				var self = this;
+				if (!self.white_player_name || !self.black_player_name) {
+					return;
+				}
+				self.btn_label = "Starting a game. Please wait..."
+				var queueFn = function () {
+					$.post("/api/speedcheckers/queue", { white_player_name: self.white_player_name, black_player_name: self.black_player_name})
+						.then(function (data) {
+							self.user_id = data.userId;
+							if (data.gameId != null) {
+								window.location.replace("/home/game?game_id=" + data.gameId );
+							}
+							setTimeout(queueFn, 1000);
+						});
+				};
+				queueFn();
+			}
+		},
+		mounted() { }
+	});
+
+	var app = new Vue({
+		el: '#app',
+		data: {
+		}
+	});
+
+</script>
