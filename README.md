@@ -1,3 +1,3 @@
 # SpeedChecker
  
-A Simple game that minimize the game called "Checker" made in C# 
+A Simple strategy game that minimized a game "Checker", made in C#, Html and JavaScript. All the rules are same as regular Checker. 
